@@ -41,6 +41,7 @@ class QiUnipaSpeech(Node):
         self.sound_detect_service = self.session.service("ALSoundDetection")
         self.sound_detect_service.setParameter("Sensitivity", 0.8)
         self.configuration = {"bodyLanguageMode":"contextual"}
+        self.leds_service = self.session.service("ALLeds")
         
         self.speech_sub = self.create_subscription(Bool, "/listen", self.set_speech, 10)
         self.tts_sub = self.create_subscription(String, "/speak", self.set_tts, 10)
@@ -165,6 +166,20 @@ class QiUnipaSpeech(Node):
         self.animated_service.say(msg.data)
         self.pub_posture("Stand", 0.5)
 
+         
+    def led_eyes(self, on):
+        names = [
+        "Face/Led/Red/Left/0Deg/Actuator/Value",
+        "Face/Led/Red/Left/90Deg/Actuator/Value",
+        "Face/Led/Red/Left/180Deg/Actuator/Value",
+        "Face/Led/Red/Left/270Deg/Actuator/Value"]
+
+        self.leds_service.createGroup("eyes",names)
+        # Switch the new group on
+        if on==True:
+            self.leds_service.on("FaceLeds")
+        elif on==False:
+            self.leds_service.off("FaceLeds")
             
     def record(self,request,response):
        
@@ -180,12 +195,14 @@ class QiUnipaSpeech(Node):
         self.sound_detect_service.subscribe("Audio Detection")
         self.audio_service.startMicrophonesRecording(output_file_robot, audio_format, sample_rate, channels)
         self.get_logger().info("(Qi Unipa Speech:Avvio microfoni")
+        self.led_eyes(True)
         time.sleep(0.3)
         while not self.is_recognizing:
             time.sleep(0.3)
             
             if  self.memory.getData("SoundDetected")[0][1]==1:
                 self.get_logger().info("(Qi Unipa Speech:Avvio registrazione...")
+                
                 self.is_recognizing=True
                 
         # Attendere la fine della registrazione
@@ -195,6 +212,7 @@ class QiUnipaSpeech(Node):
                     self.is_recognizing=False
                      # Terminare la registrazione
                     self.audio_service.stopMicrophonesRecording()
+                    self.led_eyes(False)
                     self.sound_detect_service.unsubscribe("Audio Detection")
                     self.get_logger().info(f"Registrazione terminata e salvata in: {output_file_robot}")
 
@@ -218,7 +236,7 @@ class QiUnipaSpeech(Node):
         
         response.resp=True
         return response
-        
+   
 
 
     def publish_audio(self, file_path):
