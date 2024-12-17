@@ -33,7 +33,7 @@ class Speech_Controller(Node):
         self.whisper = WhisperHugging()
         self.file_path="/home/alessandro/Desktop/roboticsLab2024/src/audio/audio_recording.wav"
         self.is_speaking=False
-  
+        self.isDone=False
   
 
     def set_speech(self,msg):
@@ -54,21 +54,31 @@ class Speech_Controller(Node):
              msg.data=resp
              self.speak_pub.publish(msg)
 
+    def service_callback(self,future):
+             self.get_logger().info(f"future: {future.result()}")
+             if future.done():
+                try:
+                    transcription=self.STT()#trascrizione 
+                    msg2=String()
+                    msg2.data=transcription
+                    self.user_transcription_pub.publish(msg2)
+                    
+                    self.get_logger().info(f"trascrizione inviata {transcription}")
+                    """
+                    response = future.result()
+                    self.get_logger().info(f"Risposta: {response.resp}")
+                    self.isDone=response.resp
+                    """
+                    #return response.resp  #completamento audio
+                except Exception as e:
+                    self.get_logger().error(f"Chiamata al servizio fallita: {e}")
+                    #return None
+            
     def send_request(self):
         
              self.req.data=10
-             self.future=self.record_cli.call_async(self.req)
-           
-             rclpy.spin_until_future_complete(self, self.future)
-             self.get_logger().info(f"future: {self.future.result()}")
-             if self.future.done():
-                try:
-                    response = self.future.result()
-                    self.get_logger().info(f"Risposta: {response}")
-                    return response  #completamento audio
-                except Exception as e:
-                    self.get_logger().error(f"Chiamata al servizio fallita: {e}")
-                    return None
+             future=self.record_cli.call_async(self.req)
+             future.add_done_callback(self.service_callback)
             
 
 
@@ -81,14 +91,9 @@ class Speech_Controller(Node):
              #self.record_pub.publish(test) # salva in locale il file audio wav
 
              response=self.send_request()
-            
-             transcription=self.STT()#trascrizione 
-             msg2=String()
-             msg2.data=transcription
-             self.user_transcription_pub.publish(msg2)
-               
-             self.get_logger().info(f"trascrizione inviata {transcription}")
-  
+           
+    
+
 
 
     def STT(self):

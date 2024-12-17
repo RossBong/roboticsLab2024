@@ -57,6 +57,7 @@ class QiUnipaSpeech(Node):
         self.create_timer(1.0, self.check_recognition)
         self.isSpeaking_pub=self.create_publisher(Bool,'/is_speaking',10)
         self.create_timer(0.5, self.check_speaking)
+        self.last_index=self.memory.getData("ALTextToSpeech/Status")[0]
 
     def set_connection(self, ip, port):
         session = qi.Session()
@@ -178,6 +179,7 @@ class QiUnipaSpeech(Node):
         
         self.sound_detect_service.subscribe("Audio Detection")
         self.audio_service.startMicrophonesRecording(output_file_robot, audio_format, sample_rate, channels)
+        self.get_logger().info("(Qi Unipa Speech:Avvio microfoni")
         time.sleep(0.3)
         while not self.is_recognizing:
             time.sleep(0.3)
@@ -204,7 +206,7 @@ class QiUnipaSpeech(Node):
         
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect('192.168.11.173', username='nao', password='nao')#'192.168.0.161'
+        ssh.connect('192.168.254.173', username='nao', password='nao')#'192.168.0.161'
 
         sftp = ssh.open_sftp()
         sftp.get(output_file_robot, local_output_file)
@@ -233,13 +235,18 @@ class QiUnipaSpeech(Node):
     def check_speaking(self):
         msg=Bool()
         status=self.memory.getData("ALTextToSpeech/Status")
-        self.get_logger().info(f"{status}")
-        if self.memory.getData("ALTextToSpeech/Status")[1]=="done":
+               
+        if status[1]=="done" and status[0]!=self.last_index:
+            
             msg.data=False
             self.isSpeaking_pub.publish(msg)
         else :
+            
+            self.get_logger().info(f"last_index:{self.last_index}")
             msg.data=True
             self.isSpeaking_pub.publish(msg)
+
+        self.last_index=status[0]
 
 def main(args=None):
     rclpy.init(args=args)

@@ -23,7 +23,7 @@ class Pepper_Controller(Node):
         self.transcription_sub=self.create_subscription(String,"/transcription",self.user_transcription,10) 
 
         self.isSpeaking_sub = self.create_subscription(Bool, "/is_speaking",self.check_speaking,10)
-        self.is_speaking=False
+        
         # Configurazione modello e tools
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         tools = [InformationTool(), ActivityTool(), RecipeTool(), MemoryTool()]
@@ -71,11 +71,13 @@ class Pepper_Controller(Node):
         self.user_input=""
         self.last_user_input=""
         self.start_conversation=False
+        self.is_speaking=False
         
 
     def user_transcription(self,msg): #aggiornamento trascrizione whisper
         self.get_logger().info(f"Pepper: trascrizione ottenuta {msg.data}")
         self.user_input=msg.data
+        self.conversational_loop()
 
     # Loop conversazionale
     def conversational_loop(self):
@@ -87,40 +89,39 @@ class Pepper_Controller(Node):
             self.robot_speak_pub.publish(msg)
       
             self.start_conversation=True
-        self.robot_speech_pub.publish(msg) #ascolta
-        while True:
-        
-            try:    
-                if self.user_input!=self.last_user_input: 
-                    self.get_logger().info(f"Pepper sta rispondendo ..")
-                    self.get_logger().info(f"Listening ---> {self.user_input}")                  
-                    if self.user_input== 'termina':
+            #self.robot_speech_pub.publish(msg) #ascolta
+       
+        try:    
+            if self.user_input!=self.last_user_input: 
+                self.get_logger().info(f"Pepper sta rispondendo ..")
+                self.get_logger().info(f"Listening ---> {self.user_input}")                  
+                if self.user_input== 'termina':
+                
+                    msg.data= "È stato un piacere aiutarti. A presto!"
+                    self.robot_speak_pub.publish(msg)
+                    self.last_user_input=self.user_input
                     
-                        msg.data= "È stato un piacere aiutarti. A presto!"
-                        self.robot_speak_pub.publish(msg)
-                        self.last_user_input=self.user_input
-                        break
-
+                else :
                     response = self.agent_executor.invoke({"input": self.user_input})
                     self.get_logger().info(f"Response{response['output']}")
                     msg.data=response['output']
                     self.robot_speak_pub.publish(msg)
-
-                    while(self.is_speaking):#
-                        time.sleep(0.3)
 
                     memory.save_context(
                         {"input": self.user_input}, 
                         {"output": response['output']}
                     )
                     self.last_user_input=self.user_input
-                    self.robot_speech_pub.publish(msg) #ascolta
                
-            except Exception as e:
-                print(f"Errore: {e}")
+               
+        except Exception as e:
+            print(f"Errore: {e}")
 
     def check_speaking(self,msg):
-        self.is_speaking=msg.data
+       msg2=String()
+       msg2.data=""
+       if not msg.data:
+         self.robot_speech_pub.publish(msg2) #ascolta
          
 
 
