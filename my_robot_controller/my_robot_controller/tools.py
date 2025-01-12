@@ -31,8 +31,10 @@ activity_query = """
     MATCH (p:Persone {id: $id_persona})
     OPTIONAL MATCH (p)-[:AVERE]->(pat:Patologie)-[:VIETARE]->(attivita_vietata:Attività)
     OPTIONAL MATCH (p)-[:AVERE]->(mob:Mobilità)-[:PERMETTERE]->(att_mob:Attività)
-    WHERE NOT (att_mob = attivita_vietata) 
+    WITH att_mob, attivita_vietata
+    WHERE attivita_vietata IS NULL OR NOT (att_mob = attivita_vietata)
     RETURN DISTINCT att_mob as attività
+
 """
 recipe_query ="""
     MATCH (p:Persone {id: $id_persona})

@@ -40,6 +40,10 @@ class Pepper_Controller(Node):
                 "Ti occuperai di consigliare ricette adatte alle intolleranze della persona assistita"
                 "Ti occuperai di consigliare attività adatte alle patologie o umore della persona assistita"
                 "Rispondi sempre  con le parole essenziali e con un tono cordiale, rispetto le informazioni a tua disposizione"
+                "Usa SOLAMENTE le informazioni ricavate per formulare una risposta "
+                "Se non hai informazioni sulla pertinenti alla domanda fatta , rispondi con: non ho informazioni a riguardo.  "
+                "non inventare nulla e se la domanda non richiede ne tool ne vi sono informazioni per la risposta in memoria rispondi  direttamente con : Mi spiace ma la domanda non risulta pertinente"
+                
             ),
             MessagesPlaceholder(variable_name="chat_history"),
             ("user", "{input}"),
@@ -75,7 +79,7 @@ class Pepper_Controller(Node):
         
 
     def user_transcription(self,msg): #aggiornamento trascrizione whisper
-        self.get_logger().info(f"Pepper: trascrizione ottenuta {msg.data}")
+        self.get_logger().info(f"Pepper: trascrizione ottenuta {msg.data}\n")
         self.user_input=msg.data
         self.conversational_loop()
 
@@ -93,9 +97,9 @@ class Pepper_Controller(Node):
        
         try:    
             if self.user_input!=self.last_user_input: 
-                self.get_logger().info(f"Pepper sta rispondendo ..")
+                self.get_logger().info(f"Pepper sta rispondendo ..\n")
                 self.get_logger().info(f"Listening ---> {self.user_input}")                  
-                if self.user_input== 'termina':
+                if self.user_input== 'Termina':
                 
                     msg.data= "È stato un piacere aiutarti. A presto!"
                     self.robot_speak_pub.publish(msg)

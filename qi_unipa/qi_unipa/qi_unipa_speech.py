@@ -168,18 +168,26 @@ class QiUnipaSpeech(Node):
 
          
     def led_eyes(self, on):
-        names = [
-        "Face/Led/Red/Left/0Deg/Actuator/Value",
-        "Face/Led/Red/Left/90Deg/Actuator/Value",
-        "Face/Led/Red/Left/180Deg/Actuator/Value",
-        "Face/Led/Red/Left/270Deg/Actuator/Value"]
+        talking= [
+        "Face/Led/Green/Left/0Deg/Actuator/Value",
+        "Face/Led/Green/Left/90Deg/Actuator/Value",
+        "Face/Led/Green/Left/180Deg/Actuator/Value",
+        "Face/Led/Green/Left/270Deg/Actuator/Value",
+        "Face/Led/Green/Right/0Deg/Actuator/Value",
+        "Face/Led/Green/Right/90Deg/Actuator/Value",
+        "Face/Led/Green/Right/180Deg/Actuator/Value",
+        "Face/Led/Green/Right/270Deg/Actuator/Value"]
 
-        self.leds_service.createGroup("eyes",names)
-        # Switch the new group on
+        self.leds_service.createGroup("eyes",talking)
+       
         if on==True:
-            self.leds_service.on("FaceLeds")
-        elif on==False:
             self.leds_service.off("FaceLeds")
+            self.leds_service.on("eyes")
+
+        elif on==False:
+
+            self.leds_service.off("eyes")
+            self.leds_service.on("FaceLeds")
             
     def record(self,request,response):
        
@@ -224,7 +232,7 @@ class QiUnipaSpeech(Node):
         
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect('192.168.254.173', username='nao', password='nao')#'192.168.0.161'
+        ssh.connect('192.168.233.173', username='nao', password='nao')#'192.168.0.161'
 
         sftp = ssh.open_sftp()
         sftp.get(output_file_robot, local_output_file)
@@ -260,7 +268,6 @@ class QiUnipaSpeech(Node):
             self.isSpeaking_pub.publish(msg)
         else :
             
-            self.get_logger().info(f"last_index:{self.last_index}")
             msg.data=True
             self.isSpeaking_pub.publish(msg)
 
